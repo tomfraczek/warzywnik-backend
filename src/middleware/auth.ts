@@ -1,12 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 import { auth } from "express-oauth2-jwt-bearer";
 import User from "../models/user";
 
 declare global {
-  namespace Express{
+  namespace Express {
     interface Request {
-
       userId: string;
       auth0Id: string;
     }
@@ -19,31 +18,33 @@ export const jwtCheck = auth({
   tokenSigningAlg: "RS256",
 });
 
-export const jwtParse = (req: Request, res: Response, next: NextFunction) => {\
-  const {authorization} = req.headers;
-  if(!authorization || !authorization.startsWith('Bearer ')){
+export const jwtParse = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { authorization } = req.headers;
+  if (!authorization || !authorization.startsWith("Bearer ")) {
     return res.sendStatus(401);
-  } 
+  }
 
-  const token = authorization.split(' ')[1];
+  const token = authorization.split(" ")[1];
 
   try {
     const decoded = jwt.decode(token) as jwt.JwtPayload;
     const auth0Id = decoded.sub;
 
-    const user = await User.findOne({auth0Id});
+    const user = await User.findOne({ auth0Id });
 
-    if(!user) {
+    if (!user) {
       res.sendStatus(401);
-    }else {
+    } else {
       req.auth0Id = auth0Id as string;
       req.userId = user._id.toString();
     }
 
-    
-
     next();
   } catch (error) {
-    res.sendStatus(401)
+    res.sendStatus(401);
   }
 };
